@@ -1,1 +1,238 @@
+import csv
+import os
+import statistics
 
+# Nome do arquivo principal
+ARQUIVO_DADOS = 'dados_faq.csv'
+
+# ==============================================================================
+# FUNÇÃO EXTRA: Cria dados de exemplo para teste
+# ==============================================================================
+def criar_csv_exemplo():
+    """Cria um arquivo CSV dummy se ele não existir para permitir testes."""
+    if not os.path.exists(ARQUIVO_DADOS):
+        cabecalho = ['ID', 'Tipo', 'Calibre', 'Cidade', 'Estado', 'Quantidade', 'Ano']
+        dados = [
+            ['1', 'Revolver', '38', 'Rio de Janeiro', 'RJ', '5', '2022'],
+            ['2', 'Pistola', '.40', 'Sao Paulo', 'SP', '12', '2023'],
+            ['3', 'Fuzil', '556', 'Rio de Janeiro', 'RJ', '2', '2022'],
+            ['4', 'Revolver', '38', 'Belo Horizonte', 'MG', '3', '2021'],
+            ['5', 'Pistola', '9mm', 'Sao Paulo', 'SP', '8', '2023'],
+            ['6', 'Espingarda', '12', 'Porto Alegre', 'RS', '4', '2022'],
+            ['7', 'Pistola', '.40', 'Rio de Janeiro', 'RJ', '15', '2021'],
+            ['8', 'Revolver', '38', 'Salvador', 'BA', '6', '2023'],
+            ['9', 'Fuzil', '762', 'Rio de Janeiro', 'RJ', '1', '2023'],
+            ['10', 'Pistola', '9mm', 'Belo Horizonte', 'MG', '5', '2022'],
+        ]
+        with open(ARQUIVO_DADOS, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(cabecalho)
+            writer.writerows(dados)
+        print(f"Arquivo de exemplo '{ARQUIVO_DADOS}' criado com sucesso!")
+
+# ==============================================================================
+# FUNÇÃO 1: Carregamento de Dados (Utilitária)
+# ==============================================================================
+def carregar_dados():
+    """Lê o arquivo CSV e retorna uma lista de dicionários."""
+    if not os.path.exists(ARQUIVO_DADOS):
+        print("Arquivo de dados não encontrado.")
+        return []
+    
+    try:
+        with open(ARQUIVO_DADOS, mode='r', encoding='utf-8') as f:
+            leitor = csv.DictReader(f)
+            # Converte para lista para podermos manipular
+            return list(leitor) 
+    except Exception as e:
+        print(f"Erro ao ler arquivo: {e}")
+        return []
+
+# ==============================================================================
+# FUNÇÃO 2: Relatório do Documento Original (Obrigatória)
+# ==============================================================================
+def relatorio_info_arquivo(dados):
+    """Apresenta informações gerais sobre o dataset."""
+    if not dados:
+        print("Sem dados carregados.")
+        return
+
+    qtd_linhas = len(dados)
+    colunas = list(dados[0].keys())
+    
+    print("\n--- RELATÓRIO DO ARQUIVO ORIGINAL ---")
+    print(f"Nome do arquivo: {ARQUIVO_DADOS}")
+    print(f"Total de registros (linhas): {qtd_linhas}")
+    print(f"Colunas disponíveis: {', '.join(colunas)}")
+    print("-" * 40)
+
+# ==============================================================================
+# FUNÇÃO 3: Filtro e Arquivo Parcial (Obrigatória - Ex: Top Cidades)
+# ==============================================================================
+def gerar_arquivo_filtrado(dados):
+    """Filtra dados (ex: apenas um Estado) e salva em novo arquivo."""
+    if not dados:
+        print("Sem dados.")
+        return
+
+    estado_filtro = input("Digite a sigla do Estado para filtrar (ex: RJ, SP): ").upper().strip()
+    
+    # Filtrando a lista
+    dados_filtrados = [linha for linha in dados if linha['Estado'].upper() == estado_filtro]
+    
+    if not dados_filtrados:
+        print(f"Nenhum registro encontrado para o estado {estado_filtro}.")
+        return
+
+    nome_arquivo = input("Digite o nome do arquivo para salvar (sem .csv): ") + ".csv"
+    
+    try:
+        with open(nome_arquivo, mode='w', newline='', encoding='utf-8') as f:
+            colunas = dados[0].keys()
+            writer = csv.DictWriter(f, fieldnames=colunas)
+            writer.writeheader()
+            writer.writerows(dados_filtrados)
+        print(f"Arquivo '{nome_arquivo}' criado com {len(dados_filtrados)} registros.")
+    except Exception as e:
+        print(f"Erro ao salvar arquivo: {e}")
+
+# ==============================================================================
+# FUNÇÃO 4: Arquivo de Resumo / Agrupamento (Obrigatória)
+# ==============================================================================
+def gerar_resumo_agrupado(dados):
+    """Agrupa o total de armamentos extraviados por Tipo de arma."""
+    if not dados:
+        print("Sem dados.")
+        return
+
+    # Dicionário para acumular totais: {'Pistola': 20, 'Fuzil': 5...}
+    agrupamento = {}
+
+    for linha in dados:
+        tipo = linha['Tipo']
+        try:
+            qtd = int(linha['Quantidade'])
+        except ValueError:
+            qtd = 0
+            
+        if tipo in agrupamento:
+            agrupamento[tipo] += qtd
+        else:
+            agrupamento[tipo] = qtd
+
+    print("\n--- RESUMO (Total por Tipo) ---")
+    for tipo, total in agrupamento.items():
+        print(f"{tipo}: {total} unidades")
+
+    # Salvar o resumo em arquivo
+    if input("\nDeseja salvar este resumo? (s/n): ").lower() == 's':
+        try:
+            with open("resumo_tipos.csv", mode='w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Tipo', 'Total_Extraviado'])
+                for k, v in agrupamento.items():
+                    writer.writerow([k, v])
+            print("Arquivo 'resumo_tipos.csv' gerado com sucesso.")
+        except Exception as e:
+            print(f"Erro: {e}")
+
+# ==============================================================================
+# FUNÇÃO 5: Dados Estatísticos (Obrigatória)
+# ==============================================================================
+def exibir_estatisticas(dados):
+    """Calcula Média, Moda e Desvio Padrão da coluna 'Quantidade'."""
+    if not dados:
+        print("Sem dados.")
+        return
+
+    # Extrair lista de números da coluna Quantidade
+    try:
+        valores = [int(linha['Quantidade']) for linha in dados]
+    except ValueError:
+        print("Erro: A coluna 'Quantidade' contém valores não numéricos.")
+        return
+
+    if not valores:
+        print("Lista de valores vazia.")
+        return
+
+    media = statistics.mean(valores)
+    
+    try:
+        moda = statistics.mode(valores)
+    except statistics.StatisticsError:
+        moda = "Sem moda única"
+        
+    # Desvio padrão exige pelo menos 2 dados
+    desvio = statistics.stdev(valores) if len(valores) > 1 else 0.0
+
+    print("\n--- ESTATÍSTICAS (Sobre 'Quantidade') ---")
+    print(f"Média de extravios por ocorrência: {media:.2f}")
+    print(f"Moda (valor mais frequente): {moda}")
+    print(f"Desvio Padrão: {desvio:.2f}")
+    print(f"Maior extravio em um único registro: {max(valores)}")
+    print(f"Menor extravio em um único registro: {min(valores)}")
+    print("-" * 40)
+
+# ==============================================================================
+# FUNÇÃO 6: Busca de Dados (Obrigatória)
+# ==============================================================================
+def buscar_dados(dados):
+    """Busca registros por termo digitado (procura em todas as colunas)."""
+    if not dados:
+        print("Sem dados.")
+        return
+
+    termo = input("Digite o termo a ser buscado (ex: nome da cidade ou tipo): ").lower()
+    encontrados = []
+
+    for linha in dados:
+        # Verifica se o termo existe em algum valor da linha
+        if any(termo in str(valor).lower() for valor in linha.values()):
+            encontrados.append(linha)
+
+    print(f"\nResultados encontrados: {len(encontrados)}")
+    for item in encontrados:
+        print(f"ID: {item.get('ID')} | {item.get('Tipo')} | {item.get('Cidade')}/{item.get('Estado')} | Qtd: {item.get('Quantidade')}")
+
+# ==============================================================================
+# MENU PRINCIPAL
+# ==============================================================================
+def menu():
+    criar_csv_exemplo() # Garante que existe arquivo para ler
+    dados_memoria = carregar_dados() # Carrega dados para a memória ao iniciar
+
+    while True:
+        print("\n=== SISTEMA DE ANÁLISE DE EXTRAVIOS ===")
+        print("1. Relatório do Arquivo Original")
+        print("2. Filtrar dados por Estado e Salvar")
+        print("3. Gerar Resumo Agrupado (Tipos)")
+        print("4. Exibir Estatísticas (Quantidade)")
+        print("5. Buscar Dados")
+        print("6. Recarregar Dados do Disco")
+        print("0. Sair")
+        
+        opcao = input("Escolha uma opção: ")
+
+        if opcao == '1':
+            relatorio_info_arquivo(dados_memoria)
+        elif opcao == '2':
+            gerar_arquivo_filtrado(dados_memoria)
+        elif opcao == '3':
+            gerar_resumo_agrupado(dados_memoria)
+        elif opcao == '4':
+            exibir_estatisticas(dados_memoria)
+        elif opcao == '5':
+            buscar_dados(dados_memoria)
+        elif opcao == '6':
+            dados_memoria = carregar_dados()
+            print("Dados recarregados!")
+        elif opcao == '0':
+            print("Encerrando o sistema...")
+            break
+        else:
+            print("Opção inválida, tente novamente.")
+
+# Execução do programa
+if __name__ == "__main__":
+    menu()
