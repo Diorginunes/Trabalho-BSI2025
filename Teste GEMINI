@@ -3,236 +3,261 @@ import os
 import statistics
 
 # Nome do arquivo principal
-ARQUIVO_DADOS = 'dados_faq.csv'
+ARQUIVO_PRINCIPAL = 'dados_faq.csv'
 
-# ==============================================================================
-# FUNÇÃO EXTRA: Cria dados de exemplo para teste
-# ==============================================================================
-def criar_csv_exemplo():
-    """Cria um arquivo CSV dummy se ele não existir para permitir testes."""
-    if not os.path.exists(ARQUIVO_DADOS):
-        cabecalho = ['ID', 'Tipo', 'Calibre', 'Cidade', 'Estado', 'Quantidade', 'Ano']
-        dados = [
-            ['1', 'Revolver', '38', 'Rio de Janeiro', 'RJ', '5', '2022'],
-            ['2', 'Pistola', '.40', 'Sao Paulo', 'SP', '12', '2023'],
-            ['3', 'Fuzil', '556', 'Rio de Janeiro', 'RJ', '2', '2022'],
-            ['4', 'Revolver', '38', 'Belo Horizonte', 'MG', '3', '2021'],
-            ['5', 'Pistola', '9mm', 'Sao Paulo', 'SP', '8', '2023'],
-            ['6', 'Espingarda', '12', 'Porto Alegre', 'RS', '4', '2022'],
-            ['7', 'Pistola', '.40', 'Rio de Janeiro', 'RJ', '15', '2021'],
-            ['8', 'Revolver', '38', 'Salvador', 'BA', '6', '2023'],
-            ['9', 'Fuzil', '762', 'Rio de Janeiro', 'RJ', '1', '2023'],
-            ['10', 'Pistola', '9mm', 'Belo Horizonte', 'MG', '5', '2022'],
-        ]
-        with open(ARQUIVO_DADOS, mode='w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(cabecalho)
-            writer.writerows(dados)
-        print(f"Arquivo de exemplo '{ARQUIVO_DADOS}' criado com sucesso!")
-
-# ==============================================================================
-# FUNÇÃO 1: Carregamento de Dados (Utilitária)
-# ==============================================================================
-def carregar_dados():
-    """Lê o arquivo CSV e retorna uma lista de dicionários."""
-    if not os.path.exists(ARQUIVO_DADOS):
-        print("Arquivo de dados não encontrado.")
-        return []
-    
-    try:
-        with open(ARQUIVO_DADOS, mode='r', encoding='utf-8') as f:
-            leitor = csv.DictReader(f)
-            # Converte para lista para podermos manipular
-            return list(leitor) 
-    except Exception as e:
-        print(f"Erro ao ler arquivo: {e}")
-        return []
-
-# ==============================================================================
-# FUNÇÃO 2: Relatório do Documento Original (Obrigatória)
-# ==============================================================================
-def relatorio_info_arquivo(dados):
-    """Apresenta informações gerais sobre o dataset."""
-    if not dados:
-        print("Sem dados carregados.")
+# --- 0. Função Auxiliar: Criar o arquivo CSV com os dados fornecidos ---
+def criar_arquivo_exemplo():
+    """Cria o arquivo dados_faq.csv caso ele não exista, usando os dados do prompt."""
+    if os.path.exists(ARQUIVO_PRINCIPAL):
         return
 
-    qtd_linhas = len(dados)
+    dados_iniciais = [
+        ["N° FAQ", "Máquina/Equipamento", "Data da Quebra", "Início/Fim Quebra", "Tempo da Quebra (minutos)", "Tipo de Falha", "Subsistema Afetado", "Líder da Máquina", "Manutentor(es)", "Operador (Quem estava operando)", "Causa Raiz", "Ação Imediata Principal", "Ação do Plano (Curta)"],
+        ["2", "SODEME", "10-01-2022", "17:00 / 21:00", "240", "Mecânica", "Mecânica (Elementos de Fixação)", "WILLIANDRO", "Odain Coutinho", "JhonATAN", "EXPEDIU O PRAZO DA PREVENTIVA", "Insistiu com regulagens e liberou a máquina em condições anormais.", "TREINAMENTO DO PROCEDIMENTO DE AJUSTE DA BIGORNA"],
+        ["20", "VINCADEIRA", "Data não Informada", "17:56 / 19:29", "90", "Mecânica", "Hidráulica e Pneumática", "ARI", "Odair / Norberto", "WILLIAN", "CONEXÃO PNEUMÁTICA DANIFICADA", "Destravado conjunto de rebolos após troca da conexão pneumática.", "CRIAR PLANO DE AÇÃO PARA TROCAR CONEXÕES PNEUMÁTICAS"],
+        ["21", "WARD 15000", "23/03/2022", "10:00 / 13:15", "195", "Elétrica", "Elétrica e Automação", "SANDRO", "ANDERSON/DICK/Jana S", "LIDER SANDRO", "SUJEIRA NO PAINEL/VEDAÇÃO EM FALHA", "Troca do DRIVE (Inversor) e parametrização.", "VEDAR PAINEL PARA NÃO ENTRAR SUJEIRA"],
+        ["1", "SODEME", "31/01/22", "00:36 / 06:35", "930", "Mecânica", "Transmissão", "Não Informado", "Tiago/Alex", "Daniel", "FALTA DE PREVENTIVA (Engrenagens/Rolamentos)", "Solicitado Kit de Manutenção (SEW) e testado motoredutor substituto.", "Criar plano preventivo / Inspeção e Análise de Óleo."],
+        ["4", "ONDULADEIRA DECC", "24/01/22", "5:00 / 10:10", "310", "Elétrica", "Elétrica e Automação", "SERGIO", "CARlos Bilk", "PRODUÇÃO", "PROCEDIMENTO NÃO CONHECIDO PELA EQUIPE (Download)", "Identificado na tela de diagnóstico a falta de download da placa perfiladora.", "Treinar equipe no procedimento de Download dos programas."],
+        ["8", "FACÃO O.D", "14/02/22", "01:30 / 02:51", "81", "Elétrica", "Elétrica e Automação", "Luiz FERNANdo", "VALDECI", "Luiz FERNANDO", "DRIVES NO FIM DA VIDA ÚTIL", "Liberada máquina para rodar somente com Facão Inferior.", "Realizar o envio dos Drives para substituição dos IGBTs a cada 5 anos."],
+        ["16", "BOBST", "03/03/2022", "03/03", "236", "Elétrica", "Elétrica e Automação", "ANDERSON SERGIO", "ANDERSON", "ANDERSON SERGIO", "CABO AVARIADO POR DESGASTE NO LIMITE DE MOVIMENTO", "Troca do cabo de comunicação da remota da garra até \"Eixo 02\".", "Elaborar plano preventivo para troca do cabo a cada ano."],
+        ["18", "ONDULADEIRA", "09/03/22", "07:00 / 07:37", "37", "Elétrica", "Elétrica e Automação", "SERGIO", "LUIRC Luiz BIRK", "OPERADOR", "SUJEIRA ACUMULADA NO ATUADOR", "Limpeza e ajuste do fim de curso do elevador superior.", "Criar item de Limpeza nos Fim de Curso na Preventiva."],
+        ["18 B", "ONDULADEIRA/MQ", "09/05/20", "9:10 / 9:51", "69", "Mecânica", "Hidráulica e Pneumática", "SCRGLO", "Não Informado", "RACEL", "ROLAMENTOS E GUIAS DA BACIA GASTOS", "Instalado calço no atuador do fim de curso para manter continuidade.", "Incluir verificação de guias/folgas de rolamento no preventivo."],
+        ["19", "OD", "Data não Informada", "10:30 / 13:40", "190", "Mecânica", "Hidráulica e Pneumática", "Sergio", "Autovis Vddeli", "OPERADOR", "ÓLEO CONTAMINADO", "Troca de cilindro de acionamento (hidráulico) lado de operação.", "Realizar filtragem do óleo do tanque."],
+        ["22", "OD-Guilhotina", "30/03/22", "19:30 / Não Informado", "Não Informado", "Elétrica", "Elétrica e Automação", "S. Ani", "MAncelo", "WilhiAw", "FALHA NA FONTE DE HABILITAÇÃO DO DRIVE (Ponta)", "Utilizado outra ponta da fonte de alimentação e o equipamento voltou a funcionar.", "Inspeção visual do sistema de refrigeração."],
+        ["33", "ONDULMOCIDA/mfa", "13/05/22", "14:00 / 14:40", "40", "Mecânica", "Transmissão", "AR", "William", "William", "OXIDAÇÃO DOS PARAFUSOS DE AÇO CARBONO", "Corrigido e Substituído Band Leader por uma nova.", "Substituição dos parafusos de Aço Carbono por Aço Inox."],
+        ["15", "GAZZELLA", "16/02", "Não Informado", "Não Informado", "Elétrica", "Elétrica e Automação", "VOADIMIR", "ANDERSON", "ALDERO", "CABO DE TENSÃO DESCARREGANDO TENSÃO NA ESTRUTURA", "Isolamento do circuito que descarregava tensão na estrutura.", "Fazer aterramento pontual (06 hastes)."],
+        ["3", "WARD 11500", "12/01/22", "11:00 / 12:45", "105", "Elétrica", "Elétrica e Automação", "ALBERTO", "ANDERSON", "ALBERTO", "SUJEIRA (PÓ DE PAPEL) NAS PLACAS", "Limpeza completa do painel do Servo Driver.", "Limpeza interna do drive de 3 em 3 meses."],
+        ["13", "SODEME", "04/03/22", "10:30 / 13:00", "150", "Mecânica", "Mecânica (Elementos de Fixação)", "WILLIANDRO", "Tiago/Norberto", "ELDER", "FALHA DE REGULAGEM (AJUSTE MUITO FINO)", "Realizado ajuste mais grosso e calibrado o cabeçote.", "Criar check-list de ajuste e realizar treinamento operacional."],
+        ["14", "WARD 11500", "14/03/22", "07:00 / 08:30", "90", "Elétrica", "Elétrica e Automação", "SANDRO", "ANDERSON", "Não Informado", "FALHA NA FONTE DO CLP E MÓDULO DE SEGURANÇA", "Substituído o módulo de segurança e o CLP voltou a ligar.", "Revisar preventivas e elaborar plano para troca do módulo de segurança."],
+        ["16", "SODEME", "21/03/22", "07:30 / 09:30", "120", "Mecânica", "Mecânica (Elementos de Fixação)", "SANDRO", "Tiago", "Não Informado", "FOLGA NO PINHÃO DE TRAÇÃO DA CORRENTE", "Substituído o cabeçote e ajustado a corrente de tração do grampeador.", "Criar plano preventivo para troca de peças de desgaste."],
+        ["17", "SODEME", "23/03/22", "14:00 / 15:30", "90", "Mecânica", "Hidráulica e Pneumática", "DANIEL", "Tiago", "Não Informado", "VAZAMENTO DO CILINDRO DE CONTROLE DE PRESSÃO", "Substituído o cilindro pneumático.", "Criar plano preventivo para troca do cilindro pneumático."],
+        ["18", "SODEME", "28/03/22", "08:30 / 10:15", "105", "Mecânica", "Mecânica (Elementos de Fixação)", "ANDERSON SERGIO", "Tiago", "Não Informado", "DESALINHAMENTO DA BIGORNA POR IMPACTO", "Corrigido o alinhamento da bigorna com ferramenta especial.", "Elaborar e implementar o check-list de ferramentas especiais."],
+        ["27", "WARD 11500", "05/05/22", "11:00 / 11:30", "30", "Mecânica", "Hidráulica e Pneumática", "CARLOS B", "ALEXANDRE", "Não Informado", "FALHA NO PROCEDIMENTO DE CARREGAMENTO", "Revisado os procedimentos de carregamento e liberado o elevador.", "Treinar operadores e manutentores no procedimento de setup do elevador."],
+        ["36,37", "ONDULADEIRA/MFII", "20/05/22", "10:00 / 12:15", "135", "Mecânica", "Hidráulica e Pneumática", "ODAIR C", "ALEXANDRE/Odair", "Não Informado", "VAZAMENTO INTERNO DA VEDAÇÃO DO CILINDRO", "Substituído o cilindro pneumático.", "Acompanhar a performance do novo cilindro."],
+        ["39", "WARD 11500", "08/07/22", "14:30 / 17:30", "180", "Elétrica", "Elétrica e Automação", "WILLIAM", "ALEXANDRE", "ADÃO", "QUEIMA DE COMPONENTE NA PLACA IHM POR VARIAÇÃO DE TENSÃO", "Troca da Placa da IHM e revisão de fiação.", "Instalar relé de supervisão de tensão no painel principal da máquina."],
+        ["40", "UNITED", "08/07/22", "01:30 / 04:30", "180", "Mecânica", "Hidráulica e Pneumática", "SERGIO", "Marlon", "S. ANTÔNIO", "VAZAMENTO INTERNO DO CILINDRO DE CORTE VINCO", "Substituído o cilindro completo e regulada a pressão.", "Criar plano preventivo para troca da vedação do cilindro de corte vinco."],
+        ["5", "ONDULADEIRA/MF1", "28/01/22", "07:30 / 10:00", "150", "Mecânica", "Transmissão", "SERGIO", "ANDERSON", "Não Informado", "FALTA DE CORREIA DE REPOSIÇÃO E FALHA NA PREVENTIVA", "Troca da correia Band Leader e substituição do rolamento.", "Aquisição da Correia Band Leader."],
+        ["8", "ONDULADEIRA/Refile", "11/02/22", "14:00 / 15:45", "105", "Mecânica", "Elementos de Fixação", "FABIANO", "ANDERSON", "FABIANO", "AFROUXAMENTO DOS PARAFUSOS DO ROLO E DESALINHAMENTO", "Ajustado o alinhamento e apertados os parafusos do refile.", "Ajustar o torque nos parafusos do Refile."],
+        ["9", "ONDULADEIRA/MF2", "18/02/22", "15:30 / 16:30", "60", "Mecânica", "Hidráulica e Pneumática", "ODAIR C", "ANDERSON", "ODAIR C", "VAZAMENTO DO MANÔMETRO DE PRESSÃO HIDRÁULICA", "Substituído o manômetro e regulada a pressão.", "Criar lista de manômetros no estoque e plano de calibração."],
+        ["10", "ONDULADEIRA/Vincadeira", "23/02/22", "12:00 / 13:00", "60", "Mecânica", "Hidráulica e Pneumática", "WAGNER/ANDERSON", "WALDECI", "WAGNER/ANDERSON", "MANGUEIRA PNEUMÁTICA RESSECADA (VIDA ÚTIL)", "Substituída a mangueira pneumática.", "Criar plano preventivo para troca de mangueiras pneumáticas."],
+        ["11", "ONDULADEIRA/GU", "25/02/22", "10:30 / 12:30", "120", "Mecânica", "Transmissão", "ODAIR C", "ANDERSON/ODAIR C", "ODAIR C", "FOLGA NO ACOPLAMENTO (VIDA ÚTIL)", "Instalado novo acoplamento e engraxada a bomba.", "Criar plano de lubrificação de acoplamentos."],
+        ["12", "ONDULADEIRA/MF2", "02/03/22", "14:30 / 17:00", "150", "Mecânica", "Hidráulica e Pneumática", "DICK", "ANDERSON", "DICK", "VAZAMENTO NO CILINDRO DE ACIONAMENTO DO COLEIRO", "Substituído o cilindro do coleiro e instalado calço no atuador.", "Verificar a instalação do cilindro e calibração de pressão."],
+        ["20", "ONDULADEIRA/Facão", "28/03/22", "13:30 / 14:30", "60", "Elétrica", "Elétrica e Automação", "SANDRO", "ANDERSON", "SERGIO", "FALHA NA COMUNICAÇÃO DO DRIVE COM O PLC", "Troca do drive e ajuste de parametrização.", "Criar plano preventivo de troca de drive a cada 5 anos."],
+        ["21", "ONDULADEIRA/Puxador", "01/04/22", "10:30 / 11:15", "45", "Mecânica", "Elementos de Fixação", "CARLOS B", "ALEXANDRE/Odair", "CARLOS B", "FOLGA NO CUBO DE FIXAÇÃO DO ROLO PUXADOR", "Troca do cubo do rolo puxador e alinhamento.", "Criar plano de inspeção semanal da fixação e alinhamento do rolo."],
+        ["31", "ONDULADEIRA/MF2", "18/05/22", "15:00 / 16:00", "60", "Mecânica", "Hidráulica e Pneumática", "DICK", "ALEXANDRE", "Não Informado", "VAZAMENTO DE ÓLEO NO CILINDRO PNEUMÁTICO", "Substituído o cilindro pneumático.", "Criar plano de limpeza e inspeção visual de vazamentos no sistema."],
+        ["35", "ONDULADEIRA/Emendador", "08/06/22", "10:00 / 11:30", "90", "Mecânica", "Mecânica (Vedação)", "WILLIAM", "WILLIAM", "ADÃO", "VAZAMENTO DE AR INTERNO NO CILINDRO DE FREIO", "Substituído o cilindro de freio.", "Criar plano preventivo para troca de vedações do cilindro de freio."],
+        ["2", "ONDULADEIRA", "10/01/22", "07:30 / 10:30", "180", "Elétrica", "Elétrica e Automação", "SANDRO", "ANDERSON", "Não Informado", "FALHA DE COMUNICAÇÃO (ENCODER/DRIVE)", "Troca do Encoder do rolo de entrada.", "Criar plano de inspeção e preventiva no Encoder."],
+        ["4", "ONDULADEIRA/MF2", "27/01/22", "09:30 / 11:45", "135", "Mecânica", "Hidráulica e Pneumática", "DICK", "ANDERSON", "DICK", "VAZAMENTO INTERNO NA VEDACÃO DO CILINDRO", "Substituição da vedação e limpeza da haste do cilindro.", "Criar plano preventivo de troca de vedações do cilindro."],
+        ["19", "BOBST", "25/03/22", "10:30 / 11:30", "60", "Elétrica", "Elétrica e Automação", "ALEXANDRE", "ALEXANDRE/Anderson", "WILLIAM", "FALHA DE COMUNICAÇÃO POR CABO DANIFICADO", "Substituição do cabo e correção da comunicação.", "Instalar protetor para evitar dano ao cabo por vibração."],
+        ["24", "GAZELLA", "13/05/22", "16:00 / 17:30", "90", "Elétrica", "Elétrica e Automação", "DICK", "ALEXANDRE", "Não Informado", "CÓDIGO DE FALHA NO DRIVE SEM CAUSA APARENTE", "Limpeza do painel e verificação de conexões.", "Instalar kit de ventilação no painel para diminuir temperatura."],
+        ["25", "BOBST", "17/05/22", "11:00 / 12:30", "90", "Mecânica", "Transmissão", "WILLIAM", "ALEXANDRE", "ADÃO", "DESGASTE NO PARAFUSO (VIDA ÚTIL/FALTA DE PREVENTIVA)", "Substituído o parafuso do tensor e corrigido o alinhamento.", "Criar plano preventivo para troca de peças de desgaste (parafusos/buchas)."]
+    ]
+
+    with open(ARQUIVO_PRINCIPAL, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerows(dados_iniciais)
+    print(f"Arquivo '{ARQUIVO_PRINCIPAL}' criado com sucesso para testes.\n")
+
+# --- 1. Leitura de Dados ---
+def carregar_dados_csv(nome_arquivo):
+    """Lê o arquivo CSV e retorna uma lista de dicionários."""
+    dados = []
+    try:
+        with open(nome_arquivo, mode='r', encoding='utf-8') as arquivo:
+            leitor = csv.DictReader(arquivo)
+            for linha in leitor:
+                dados.append(linha)
+        return dados
+    except FileNotFoundError:
+        print(f"Erro: O arquivo '{nome_arquivo}' não foi encontrado.")
+        return []
+
+# --- 2. Exibição de Informações do Arquivo (Relatório) ---
+def exibir_relatorio_arquivo(dados):
+    """Exibe número de linhas e nomes das colunas."""
+    if not dados:
+        print("Nenhum dado para analisar.")
+        return
+
     colunas = list(dados[0].keys())
+    total_linhas = len(dados)
     
-    print("\n--- RELATÓRIO DO ARQUIVO ORIGINAL ---")
-    print(f"Nome do arquivo: {ARQUIVO_DADOS}")
-    print(f"Total de registros (linhas): {qtd_linhas}")
-    print(f"Colunas disponíveis: {', '.join(colunas)}")
+    print("-" * 40)
+    print("RELATÓRIO DO ARQUIVO ORIGINAL")
+    print("-" * 40)
+    print(f"Total de registros (linhas): {total_linhas}")
+    print(f"Quantidade de colunas: {len(colunas)}")
+    print("Nomes das Colunas:")
+    for col in colunas:
+        print(f" - {col}")
     print("-" * 40)
 
-# ==============================================================================
-# FUNÇÃO 3: Filtro e Arquivo Parcial (Obrigatória - Ex: Top Cidades)
-# ==============================================================================
-def gerar_arquivo_filtrado(dados):
-    """Filtra dados (ex: apenas um Estado) e salva em novo arquivo."""
-    if not dados:
-        print("Sem dados.")
-        return
-
-    estado_filtro = input("Digite a sigla do Estado para filtrar (ex: RJ, SP): ").upper().strip()
-    
-    # Filtrando a lista
-    dados_filtrados = [linha for linha in dados if linha['Estado'].upper() == estado_filtro]
-    
-    if not dados_filtrados:
-        print(f"Nenhum registro encontrado para o estado {estado_filtro}.")
-        return
-
-    nome_arquivo = input("Digite o nome do arquivo para salvar (sem .csv): ") + ".csv"
-    
+# --- Auxiliar: Tratar tempo (converter string para int) ---
+def extrair_tempo(valor):
+    """Converte o valor do tempo para inteiro, retornando 0 se falhar ou não informado."""
+    if not valor or valor.lower() == "não informado":
+        return 0
     try:
-        with open(nome_arquivo, mode='w', newline='', encoding='utf-8') as f:
-            colunas = dados[0].keys()
-            writer = csv.DictWriter(f, fieldnames=colunas)
-            writer.writeheader()
-            writer.writerows(dados_filtrados)
-        print(f"Arquivo '{nome_arquivo}' criado com {len(dados_filtrados)} registros.")
+        return int(valor)
+    except ValueError:
+        return 0
+
+# --- 3. Filtragem e Criação de Arquivo Parcial ---
+def filtrar_por_tempo_parada(dados):
+    """Filtra máquinas com tempo de parada maior que X e salva em novo arquivo."""
+    try:
+        minimo = int(input("Digite o tempo mínimo de parada (minutos) para filtrar: "))
+    except ValueError:
+        print("Valor inválido. Operação cancelada.")
+        return
+
+    dados_filtrados = [
+        linha for linha in dados 
+        if extrair_tempo(linha['Tempo da Quebra (minutos)']) > minimo
+    ]
+
+    if not dados_filtrados:
+        print("Nenhum registro encontrado com esse critério.")
+        return
+
+    nome_saida = input("Digite o nome do arquivo para salvar (ex: filtro_paradas.csv): ")
+    if not nome_saida.endswith('.csv'):
+        nome_saida += '.csv'
+
+    salvar_csv(dados_filtrados, nome_saida)
+
+# --- 4. Criação de Arquivo de Resumo (Agrupamento) ---
+def gerar_resumo_por_maquina(dados):
+    """Agrupa dados por Máquina, somando o tempo total de quebra."""
+    resumo = {}
+
+    for linha in dados:
+        maquina = linha['Máquina/Equipamento']
+        tempo = extrair_tempo(linha['Tempo da Quebra (minutos)'])
+        
+        if maquina not in resumo:
+            resumo[maquina] = {'total_tempo': 0, 'ocorrencias': 0}
+        
+        resumo[maquina]['total_tempo'] += tempo
+        resumo[maquina]['ocorrencias'] += 1
+
+    # Preparar lista para salvar
+    lista_resumo = []
+    print("\n--- PRÉVIA DO RESUMO ---")
+    print(f"{'Máquina':<25} | {'Ocorrências':<12} | {'Tempo Total (min)'}")
+    for mq, info in resumo.items():
+        print(f"{mq:<25} | {info['ocorrencias']:<12} | {info['total_tempo']}")
+        lista_resumo.append({
+            'Máquina/Equipamento': mq,
+            'Total de Ocorrências': info['ocorrencias'],
+            'Tempo Total de Quebra (min)': info['total_tempo']
+        })
+
+    salvar = input("\nDeseja salvar este resumo em arquivo? (s/n): ").lower()
+    if salvar == 's':
+        salvar_csv(lista_resumo, 'resumo_maquinas.csv')
+
+# --- 5. Dados Estatísticos ---
+def apresentar_estatisticas(dados):
+    """Calcula média, maior e menor tempo de parada."""
+    tempos = [extrair_tempo(linha['Tempo da Quebra (minutos)']) for linha in dados]
+    
+    # Remove zeros resultantes de "Não Informado" para não distorcer a média (opcional)
+    tempos_validos = [t for t in tempos if t > 0]
+
+    if not tempos_validos:
+        print("Não há dados numéricos suficientes para estatísticas.")
+        return
+
+    media = statistics.mean(tempos_validos)
+    mediana = statistics.median(tempos_validos)
+    maximo = max(tempos_validos)
+    minimo = min(tempos_validos)
+    desvio = statistics.stdev(tempos_validos) if len(tempos_validos) > 1 else 0
+
+    print("-" * 40)
+    print("ESTATÍSTICAS DE TEMPO DE QUEBRA (minutos)")
+    print("-" * 40)
+    print(f"Média: {media:.2f} min")
+    print(f"Mediana: {mediana:.2f} min")
+    print(f"Desvio Padrão: {desvio:.2f}")
+    print(f"Maior parada: {maximo} min")
+    print(f"Menor parada: {minimo} min")
+    print("-" * 40)
+
+# --- 6. Busca de Dados ---
+def buscar_dados(dados):
+    """Busca um termo digitado pelo usuário em todas as colunas."""
+    termo = input("Digite o termo ou nome para buscar: ").lower()
+    resultados = []
+
+    for linha in dados:
+        # Junta todos os valores da linha numa string única para buscar
+        conteudo_linha = " ".join(linha.values()).lower()
+        if termo in conteudo_linha:
+            resultados.append(linha)
+
+    if resultados:
+        print(f"\nForam encontrados {len(resultados)} registros contendo '{termo}':")
+        for i, res in enumerate(resultados, 1):
+            print(f"{i}. Máq: {res['Máquina/Equipamento']} | Falha: {res['Tipo de Falha']} | Data: {res['Data da Quebra']}")
+    else:
+        print(f"Nenhum registro encontrado para '{termo}'.")
+
+# --- Função Auxiliar: Salvar CSV ---
+def salvar_csv(dados, nome_arquivo):
+    """Salva uma lista de dicionários em um arquivo CSV."""
+    if not dados:
+        return
+    
+    colunas = dados[0].keys()
+    try:
+        with open(nome_arquivo, mode='w', newline='', encoding='utf-8') as arquivo:
+            escritor = csv.DictWriter(arquivo, fieldnames=colunas)
+            escritor.writeheader()
+            escritor.writerows(dados)
+        print(f"Arquivo '{nome_arquivo}' gravado com sucesso!")
     except Exception as e:
         print(f"Erro ao salvar arquivo: {e}")
 
-# ==============================================================================
-# FUNÇÃO 4: Arquivo de Resumo / Agrupamento (Obrigatória)
-# ==============================================================================
-def gerar_resumo_agrupado(dados):
-    """Agrupa o total de armamentos extraviados por Tipo de arma."""
-    if not dados:
-        print("Sem dados.")
-        return
-
-    # Dicionário para acumular totais: {'Pistola': 20, 'Fuzil': 5...}
-    agrupamento = {}
-
-    for linha in dados:
-        tipo = linha['Tipo']
-        try:
-            qtd = int(linha['Quantidade'])
-        except ValueError:
-            qtd = 0
-            
-        if tipo in agrupamento:
-            agrupamento[tipo] += qtd
-        else:
-            agrupamento[tipo] = qtd
-
-    print("\n--- RESUMO (Total por Tipo) ---")
-    for tipo, total in agrupamento.items():
-        print(f"{tipo}: {total} unidades")
-
-    # Salvar o resumo em arquivo
-    if input("\nDeseja salvar este resumo? (s/n): ").lower() == 's':
-        try:
-            with open("resumo_tipos.csv", mode='w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(['Tipo', 'Total_Extraviado'])
-                for k, v in agrupamento.items():
-                    writer.writerow([k, v])
-            print("Arquivo 'resumo_tipos.csv' gerado com sucesso.")
-        except Exception as e:
-            print(f"Erro: {e}")
-
-# ==============================================================================
-# FUNÇÃO 5: Dados Estatísticos (Obrigatória)
-# ==============================================================================
-def exibir_estatisticas(dados):
-    """Calcula Média, Moda e Desvio Padrão da coluna 'Quantidade'."""
-    if not dados:
-        print("Sem dados.")
-        return
-
-    # Extrair lista de números da coluna Quantidade
-    try:
-        valores = [int(linha['Quantidade']) for linha in dados]
-    except ValueError:
-        print("Erro: A coluna 'Quantidade' contém valores não numéricos.")
-        return
-
-    if not valores:
-        print("Lista de valores vazia.")
-        return
-
-    media = statistics.mean(valores)
-    
-    try:
-        moda = statistics.mode(valores)
-    except statistics.StatisticsError:
-        moda = "Sem moda única"
-        
-    # Desvio padrão exige pelo menos 2 dados
-    desvio = statistics.stdev(valores) if len(valores) > 1 else 0.0
-
-    print("\n--- ESTATÍSTICAS (Sobre 'Quantidade') ---")
-    print(f"Média de extravios por ocorrência: {media:.2f}")
-    print(f"Moda (valor mais frequente): {moda}")
-    print(f"Desvio Padrão: {desvio:.2f}")
-    print(f"Maior extravio em um único registro: {max(valores)}")
-    print(f"Menor extravio em um único registro: {min(valores)}")
-    print("-" * 40)
-
-# ==============================================================================
-# FUNÇÃO 6: Busca de Dados (Obrigatória)
-# ==============================================================================
-def buscar_dados(dados):
-    """Busca registros por termo digitado (procura em todas as colunas)."""
-    if not dados:
-        print("Sem dados.")
-        return
-
-    termo = input("Digite o termo a ser buscado (ex: nome da cidade ou tipo): ").lower()
-    encontrados = []
-
-    for linha in dados:
-        # Verifica se o termo existe em algum valor da linha
-        if any(termo in str(valor).lower() for valor in linha.values()):
-            encontrados.append(linha)
-
-    print(f"\nResultados encontrados: {len(encontrados)}")
-    for item in encontrados:
-        print(f"ID: {item.get('ID')} | {item.get('Tipo')} | {item.get('Cidade')}/{item.get('Estado')} | Qtd: {item.get('Quantidade')}")
-
-# ==============================================================================
-# MENU PRINCIPAL
-# ==============================================================================
+# --- Menu Principal ---
 def menu():
-    criar_csv_exemplo() # Garante que existe arquivo para ler
-    dados_memoria = carregar_dados() # Carrega dados para a memória ao iniciar
+    criar_arquivo_exemplo() # Garante que o arquivo existe
+    dados = carregar_dados_csv(ARQUIVO_PRINCIPAL)
+
+    if not dados:
+        return
 
     while True:
-        print("\n=== SISTEMA DE ANÁLISE DE EXTRAVIOS ===")
-        print("1. Relatório do Arquivo Original")
-        print("2. Filtrar dados por Estado e Salvar")
-        print("3. Gerar Resumo Agrupado (Tipos)")
-        print("4. Exibir Estatísticas (Quantidade)")
+        print("\n=== SISTEMA DE ANÁLISE DE MANUTENÇÃO ===")
+        print("1. Exibir Relatório do Arquivo Original")
+        print("2. Filtrar por Tempo de Parada (Criar arquivo parcial)")
+        print("3. Gerar Resumo por Máquina (Totalizadores)")
+        print("4. Exibir Estatísticas de Tempo")
         print("5. Buscar Dados")
-        print("6. Recarregar Dados do Disco")
+        print("6. Recarregar Dados")
         print("0. Sair")
         
         opcao = input("Escolha uma opção: ")
 
         if opcao == '1':
-            relatorio_info_arquivo(dados_memoria)
+            exibir_relatorio_arquivo(dados)
         elif opcao == '2':
-            gerar_arquivo_filtrado(dados_memoria)
+            filtrar_por_tempo_parada(dados)
         elif opcao == '3':
-            gerar_resumo_agrupado(dados_memoria)
+            gerar_resumo_por_maquina(dados)
         elif opcao == '4':
-            exibir_estatisticas(dados_memoria)
+            apresentar_estatisticas(dados)
         elif opcao == '5':
-            buscar_dados(dados_memoria)
+            buscar_dados(dados)
         elif opcao == '6':
-            dados_memoria = carregar_dados()
-            print("Dados recarregados!")
+            dados = carregar_dados_csv(ARQUIVO_PRINCIPAL)
+            print("Dados recarregados.")
         elif opcao == '0':
             print("Encerrando o sistema...")
             break
         else:
             print("Opção inválida, tente novamente.")
 
-# Execução do programa
 if __name__ == "__main__":
     menu()
